@@ -11,6 +11,14 @@ use App\Http\Controllers\StudentController;
 use App\Http\Controllers\EmployeeController;
 use App\Http\Requests\StorePostRequest;
 
+use App\Models\Product;
+
+use App\Models\Employee;
+use App\Models\Buyer;
+use App\Models\Item;
+use App\Models\Order;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Hash;
 
 
 // Route::get('/', function () {
@@ -148,3 +156,118 @@ Route::get('/comp', function () {
 Route::get('/user/{name?}', function (?string $name = 'John') {
     return $name;
 });
+
+
+
+// -------------------------------------------------------------------------
+
+Route::get('/', function () {
+    return view('welcome');
+});
+
+
+Route::get('/products', function () {
+    return Product::all();
+});
+
+// 1️⃣ Only active employees
+Route::get('/employees/active', function () {
+    return Employee::active()->get();
+});
+
+// 2️⃣ Active employees from IT department
+Route::get('/employees/it', function () {
+    return Employee::active()
+        ->department('HR')
+        ->get();
+});
+
+// 3️⃣ Active employees with high salary
+Route::get('/employees/high-salary', function () {
+    return Employee::active()
+        ->highSalary(50000)
+        ->get();
+});
+
+use App\Models\Student;
+
+// Route::get('/students/{course}', function($course){
+//     // Get all students of the given course (any status)
+//     $students = Student::whereHas('course', function($q) use ($course){
+//         $q->where('name', $course);
+//     })->get();
+
+//     return $students; // returns JSON in browser
+// });
+
+Route::get('/check-students', function () {
+    return Student::with('course')->get();
+});
+Route::get('/students/high-marks/{marks}', function ($marks) {
+    return Student::highMarks($marks)->get();
+});
+use App\Models\Category;
+
+Route::get('/categories', function () {
+    return Category::with('posts')->get();
+});
+
+// -------------------------------
+
+Route::get('/register', fn () => view('register'));
+
+Route::post('/register', function (Request $request) {
+    Buyer::create([
+        'name' => $request->name,
+        'email' => $request->email,
+        'password' => Hash::make($request->password),
+    ]);
+
+    return redirect('/login');
+});
+Route::get('/login', fn () => view('login'));
+
+Route::post('/login', function (Request $request) {
+    $buyer = Buyer::where('email', $request->email)->first();
+
+    if ($buyer && Hash::check($request->password, $buyer->password)) {
+        session(['buyer_id' => $buyer->id]);
+        return redirect('/items');
+    }
+
+    return back()->with('error', 'Invalid login');
+});
+Route::get('/logout', function () {
+    session()->forget('buyer_id');
+    return redirect('/login');
+});
+Route::get('/items', function () {
+    if (!session('buyer_id')) return redirect('/login');
+
+    return view('items', [
+        'items' => Item::with('category')->get()
+    ]);
+});
+Route::post('/buy/{item}', function (Item $item) {
+    if (!session('buyer_id')) return redirect('/login');
+
+    Order::create([
+        'buyer_id' => session('buyer_id'),
+        'item_id' => $item->id,
+    ]);
+
+    return back()->with('success', 'Order placed!');
+});
+
+Route::get('/orders', function () {
+    if (!session('buyer_id')) return redirect('/login');
+
+    $orders = Order::with('item.category')
+        ->where('buyer_id', session('buyer_id'))
+        ->get();
+
+    return view('orders', compact('orders'));
+});
+
+
+?>
