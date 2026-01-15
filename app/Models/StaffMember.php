@@ -1,0 +1,19 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+
+class StaffMember extends Model
+{
+   protected $fillable = [
+        'full_name',
+        'organization_id'
+    ];
+    // protected $touches = ['organization'];
+
+    public function organization()
+    {
+        return $this->belongsTo(Organization::class);
+    }
+}

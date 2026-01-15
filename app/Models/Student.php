@@ -16,13 +16,12 @@ class Student extends Model
         return $this->belongsTo(Course::class);
     }
 
-    // Scope: active students
+   
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
     }
 
-    // Scope: high marks
     public function scopeHighMarks($query, $marks)
     {
         return $query->where('marks', '>=', $marks);

@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->foreignId('course_id')->constrained()->onDelete('cascade');
-            $table->string('status'); // active / inactive
+            $table->string('status'); 
             $table->integer('marks');
             $table->timestamps();
         });

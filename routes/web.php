@@ -13,12 +13,22 @@ use App\Http\Requests\StorePostRequest;
 
 use App\Models\Product;
 
+use App\Models\Student;
+use App\Models\Room;
+use App\Models\Resident;
+use App\Models\Warden;
+use App\Models\Organization;
+use App\Models\StaffMember;
+use App\Models\Project;
+use App\Models\Staff;
 use App\Models\Employee;
 use App\Models\Buyer;
 use App\Models\Item;
 use App\Models\Order;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+
+
 
 
 // Route::get('/', function () {
@@ -170,27 +180,21 @@ Route::get('/products', function () {
     return Product::all();
 });
 
-// 1️⃣ Only active employees
+
 Route::get('/employees/active', function () {
     return Employee::active()->get();
 });
-
-// 2️⃣ Active employees from IT department
 Route::get('/employees/it', function () {
     return Employee::active()
         ->department('HR')
         ->get();
 });
 
-// 3️⃣ Active employees with high salary
 Route::get('/employees/high-salary', function () {
     return Employee::active()
         ->highSalary(50000)
         ->get();
 });
-
-use App\Models\Student;
-
 // Route::get('/students/{course}', function($course){
 //     // Get all students of the given course (any status)
 //     $students = Student::whereHas('course', function($q) use ($course){
@@ -206,7 +210,7 @@ Route::get('/check-students', function () {
 Route::get('/students/high-marks/{marks}', function ($marks) {
     return Student::highMarks($marks)->get();
 });
-use App\Models\Category;
+
 
 Route::get('/categories', function () {
     return Category::with('posts')->get();
@@ -214,59 +218,91 @@ Route::get('/categories', function () {
 
 // -------------------------------
 
-Route::get('/register', fn () => view('register'));
-
-Route::post('/register', function (Request $request) {
-    Buyer::create([
-        'name' => $request->name,
-        'email' => $request->email,
-        'password' => Hash::make($request->password),
+Route::get('/store-resident-room', function () {
+    $resident = Resident::create([
+        'name' => 'Ravi'
     ]);
-
-    return redirect('/login');
-});
-Route::get('/login', fn () => view('login'));
-
-Route::post('/login', function (Request $request) {
-    $buyer = Buyer::where('email', $request->email)->first();
-
-    if ($buyer && Hash::check($request->password, $buyer->password)) {
-        session(['buyer_id' => $buyer->id]);
-        return redirect('/items');
-    }
-
-    return back()->with('error', 'Invalid login');
-});
-Route::get('/logout', function () {
-    session()->forget('buyer_id');
-    return redirect('/login');
-});
-Route::get('/items', function () {
-    if (!session('buyer_id')) return redirect('/login');
-
-    return view('items', [
-        'items' => Item::with('category')->get()
+    $room = new Room([
+        'room_number' => 'A101'
     ]);
+    $resident->room()->save($room);
+    return 'Resident room stored';
 });
-Route::post('/buy/{item}', function (Item $item) {
-    if (!session('buyer_id')) return redirect('/login');
 
-    Order::create([
-        'buyer_id' => session('buyer_id'),
-        'item_id' => $item->id,
+Route::get('/store-warden-room', function () {
+    $warden = Warden::create([
+        'name' => 'Mr Patel'
     ]);
-
-    return back()->with('success', 'Order placed!');
+    $room = new Room([
+        'room_number' => 'W201'
+    ]);
+    $warden->room()->save($room);
+    return 'Warden room stored';
 });
 
-Route::get('/orders', function () {
-    if (!session('buyer_id')) return redirect('/login');
+Route::get('/assign-staff', function () {
 
-    $orders = Order::with('item.category')
-        ->where('buyer_id', session('buyer_id'))
-        ->get();
+    // $organization = Organization::firstOrCreate([
+    //     'organization_name' => 'viitor cloud'
+    // ]);
+    // $organization = Organization::find(1);
+     
+    // $organization->staffMembers()->createQuietly([
+    //     'full_name' => 'new.',
+    // ]);
+    //     $organization = Organization::find(1);
+    // $organization->organization_name = 'Updated';
+    // $organization->save();
 
-    return view('orders', compact('orders'));
+    // $staff = StaffMember::first();
+    // $staff->full_name = 'Updated  Name';
+    // $staff->save();
+    StaffMember::withoutTouching(function () {
+    $staff = StaffMember::first();
+
+    $staff->timestamps = false;
+    //   $staff->update(['full_name' => 'Temp Update']);
+    $staff->full_name = 'Updateding Name';
+    $staff->save();
+});
+    // $staff = new StaffMember();
+    // $staff->full_name = 'raj';
+
+    // $staff->organization()->associate($organization);
+    // $staff->organization()->dissociate($organization);
+    
+    // $staff->save();
+
+    return 'Staff member assigned to organization successfully';
+});
+
+Route::get('/assign-projects', function () {
+
+    // $staff = Staff::find(1);
+    $staff = Staff::find(2);
+    // $staff->projects()->attach([1]);
+    //  $staff->projects()->detach([1]);
+    // $staff->projects()->sync([1]);
+    // $staff->projects()->sync([]);
+    // $staff->projects()->toggle([1]);/
+//    $staff->projects()->syncWithoutDetaching([1]);
+    $staff->projects()->syncWithPivotValues([1,3], ['role' => 'Developer']);
+
+    // $staff->projects()->toggle([
+    // 4 => ['role' => 'abc'],
+        
+    // ]);
+    // $staff->projects()->sync([
+    //     4 => ['role' => 'testing'],
+    //     2 ,3,1
+    // ]);
+    // $staff->projects()->syncWithoutDetaching([
+    //      4 => ['role' => 'developer'],
+    // ]);
+    //  $staff->projects()->updateExistingPivot(4, ['role' => 'Lead Developer']);
+    
+    
+    return 'Projects synced successfully';
 });
 
 

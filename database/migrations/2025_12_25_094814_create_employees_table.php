@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('department');
-            $table->string('status'); // active / inactive
+            $table->string('status'); 
             $table->integer('salary');
             $table->timestamps();
             });
